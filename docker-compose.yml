@@ -1,0 +1,61 @@
+# Rizzo Flow API — base service, CPU only. Works anywhere, no device passthrough.
+#
+#   GPU (AMD/Intel via Vulkan): docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#   or just: make up   (the Makefile picks the GPU file when /dev/dri exists)
+#
+# Everything configurable lives in .env (copy .env.example).
+name: rizzo-flow
+
+services:
+  rizzo:
+    build:
+      context: .
+      args:
+        # Pinned upstream commit; override in .env or with `make update`.
+        RIZZO_COMMIT: "${RIZZO_COMMIT:-b9ba007ee4d2928bbab5b1d8bfe9009c3696b6de}"
+    image: rizzo-flow:local
+    container_name: rizzo-flow
+    restart: unless-stopped
+    init: true
+    environment:
+      RIZZO_SIZE: "${RIZZO_SIZE:-4b}"
+      RIZZO_QUANT: "${RIZZO_QUANT:-q8_0}"
+      RIZZO_WEIGHTS: "${RIZZO_WEIGHTS:-flow}"
+      # Base service = CPU. docker-compose.gpu.yml overrides these two.
+      RIZZO_RUNTIME: "${RIZZO_RUNTIME:-vulkan}"
+      RIZZO_DEVICE: "${RIZZO_DEVICE:-gpu}"
+      RIZZO_CTX: "${RIZZO_CTX:-8192}"
+      RIZZO_BATCH_SIZE: "${RIZZO_BATCH_SIZE:-4}"
+      RIZZO_THREADS: "${RIZZO_THREADS:-}"
+      RIZZO_KV_TYPE: "${RIZZO_KV_TYPE:-}"
+      RIZZO_CALIBRATION: "${RIZZO_CALIBRATION:-}"
+      RIZZO_API_KEY: "${RIZZO_API_KEY:-}"
+      RIZZO_INTERNAL_PORT: "8017"
+      # Only needed for gated Hugging Face repos; the pinned files are public.
+      HF_TOKEN: "${HF_TOKEN:-}"
+      HF_HOME: "/data/hf"
+    ports:
+      # Bound to loopback by default: nothing outside this machine can reach the API.
+      - "${RIZZO_HOST:-127.0.0.1}:${RIZZO_PORT:-8017}:8017"
+    volumes:
+      # models/            4.4 GB GGUF (downloaded on first start)
+      # runtimes/          llama.cpp b11081 binaries for this machine
+      # hf/                Hugging Face cache
+      - ./data:/data
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8017/health', timeout=3)
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      # Generous: the first start also downloads ~4.4 GB.
+      start_period: 1800s
+    stop_grace_period: 30s
+
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RIZZO_GROUP_ADD:-keep-groups}"

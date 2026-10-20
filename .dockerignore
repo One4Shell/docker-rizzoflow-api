@@ -1,0 +1,9 @@
+# Build context: the app comes from the pinned git commit, only the entrypoint is local.
+data/
+.env
+.env.example
+README.md
+Makefile
+docker-compose*.yml
+.git
+.gitignore

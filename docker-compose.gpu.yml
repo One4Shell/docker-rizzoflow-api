@@ -1,0 +1,19 @@
+# GPU overlay: AMD or Intel iGPU/dGPU through Vulkan (Mesa RADV/ANV inside the image).
+# Use together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Requires the host kernel driver (amdgpu/i915/xe) and /dev/dri.
+# If the container cannot open the render node, set RIZZO_GROUP_ADD in .env:
+#   podman (rootless, default here) .... keep-groups   (keeps your render/video groups)
+#   docker ............................. the host render GID, e.g. 987  (`getent group render`)
+services:
+  rizzo:
+    environment:
+      RIZZO_RUNTIME: "${RIZZO_RUNTIME:-vulkan}"
+      # auto = the Vulkan device when one is enumerated, CPU otherwise.
+      RIZZO_DEVICE: "${RIZZO_DEVICE:-auto}"
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${RIZZO_GROUP_ADD:-keep-groups}"
