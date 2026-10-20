@@ -18,12 +18,12 @@ services:
     restart: unless-stopped
     init: true
     environment:
-      RIZZO_SIZE: "${RIZZO_SIZE:-4b}"
-      RIZZO_QUANT: "${RIZZO_QUANT:-q8_0}"
+      RIZZO_SIZE: "${RIZZO_SIZE:-1.7b}"
+      RIZZO_QUANT: "${RIZZO_QUANT:-q4_k_m}"
       RIZZO_WEIGHTS: "${RIZZO_WEIGHTS:-flow}"
       # Base service = CPU. docker-compose.gpu.yml overrides these two.
-      RIZZO_RUNTIME: "${RIZZO_RUNTIME:-vulkan}"
-      RIZZO_DEVICE: "${RIZZO_DEVICE:-gpu}"
+      RIZZO_RUNTIME: "${RIZZO_RUNTIME:-cpu}"
+      RIZZO_DEVICE: "${RIZZO_DEVICE:-cpu}"
       RIZZO_CTX: "${RIZZO_CTX:-8192}"
       RIZZO_BATCH_SIZE: "${RIZZO_BATCH_SIZE:-4}"
       RIZZO_THREADS: "${RIZZO_THREADS:-}"
@@ -54,8 +54,3 @@ services:
       # Generous: the first start also downloads ~4.4 GB.
       start_period: 1800s
     stop_grace_period: 30s
-
-    devices:
-      - /dev/dri:/dev/dri
-    group_add:
-      - "${RIZZO_GROUP_ADD:-keep-groups}"
